@@ -1,0 +1,695 @@
+{
+  "instance": {
+    "ring_size": 2187,
+    "q": 34993,
+    "ring_kind": "ternary_cyclotomic",
+    "secret_kind": "dense_ternary",
+    "hamming_weight": null,
+    "error_sigma": null,
+    "secret_sigma": null,
+    "samples": null,
+    "modulus_chain": [],
+    "tag": "TriFHE-cyclotomic-n1458-q34993",
+    "lattice_dim": 1458,
+    "log2_q": 15.094778733741126,
+    "error_sigma_effective": 3.19,
+    "error_sigma_is_assumed": true,
+    "keyspace_log2": 2310.8753260514454
+  },
+  "estimator_instance": {
+    "n": 1458,
+    "q": 34993,
+    "Xs": "D(\u03c3=0.82, \u03bc=0.00, n=1458)",
+    "Xe": "D(\u03c3=3.19, \u03bc=0.00)",
+    "m": "+Infinity",
+    "tag": "TriFHE-cyclotomic-n1458-q34993"
+  },
+  "modelling_decisions": [
+    {
+      "field": "n",
+      "mapped_to": "1458",
+      "rationale": "Ring 'ternary_cyclotomic' at declared size 2187 gives LWE dimension 1458. The RLWE-to-LWE reduction is treated as dimension-preserving: no known attack exploits the ring structure of a general cyclotomic to beat the plain-LWE cost, so estimating the plain-LWE instance of the same dimension is the standard and conservative practice. This does NOT hold for rings with exploitable subfields."
+    },
+    {
+      "field": "Xs",
+      "mapped_to": "ND.Uniform(-1, 1, n)",
+      "rationale": "Dense ternary secret. The estimator models this as uniform on the inclusive integer range [-1, 1], giving stddev sqrt(2/3) and density 2/3. This is the same modelling the HE Standard uses for ternary secrets."
+    },
+    {
+      "field": "Xe",
+      "mapped_to": "ND.DiscreteGaussian(3.19)",
+      "rationale": "Discrete Gaussian error. WIDTH IS ASSUMED, NOT SPECIFIED: the source specification gives no error distribution, so the HE Standard v1.1 value sigma = 3.19 is substituted. Every bit-security number in this run is conditional on that assumption and is void if the implementation uses a different width."
+    },
+    {
+      "field": "m",
+      "mapped_to": "oo (unbounded)",
+      "rationale": "Unbounded samples is the estimator default and the conservative choice: it lets sample-hungry attacks (BKW, dual with amplification) reach their best cost. A real RLWE deployment publishes far fewer, so also run with m = n to see the sample-limited figure."
+    }
+  ],
+  "structural_findings": [
+    {
+      "id": "q-not-prime",
+      "severity": "blocker",
+      "detail": "q = 34993 is COMPOSITE: 34993 = 7 x 4999. Z_q is therefore not a field, it has zero divisors, and not every nonzero element is invertible. A single-modulus NTT over Z_q requires a primitive 2N-th root of unity in a field; a composite modulus needs an explicit CRT/RNS decomposition with each factor separately satisfying the root-of-unity condition, and the smallest factor here bounds what the scheme can actually represent. If the specification describes q as prime, that statement is false and the NTT correctness argument built on it does not hold."
+    },
+    {
+      "id": "nwc-crt-fail",
+      "severity": "blocker",
+      "detail": "q = 34993 = 1 mod 2N (4374) holds for the PRODUCT, which looks like the right congruence, but q is composite so the product congruence is not what an NTT needs. A negative-wrapped convolution NTT requires a primitive 2N-th root of unity, which exists in Z_p only when p = 1 mod 2N; over a composite modulus each CRT component must satisfy this independently. Residues: 7 = 7 mod 4374, 4999 = 625 mod 4374. Component(s) [7, 4999] do NOT satisfy p = 1 mod 2N, so no primitive 2N-th root of unity exists in those components and the NWC NTT cannot be constructed as specified. The product congruence holding while no factor does is a classic false-positive on this check."
+    },
+    {
+      "id": "noise-budget-thin",
+      "severity": "blocker",
+      "detail": "log2(q) = 15.1 against error stddev 3.19 leaves only ~13.4 bits of total noise headroom. That is far below what a single homomorphic multiplication plus relinearisation consumes in BGV/BFV-style schemes, so this instance is not a usable FHE parameter set regardless of how hard the lattice is. Smaller q makes the lattice HARDER and the scheme LESS useful; these two must be reported together."
+    },
+    {
+      "id": "keyspace-not-security",
+      "severity": "info",
+      "detail": "Raw secret keyspace is ~2^2311. This is NOT the security level and must never be quoted as one. The estimator output below is the security level."
+    }
+  ],
+  "results": [
+    {
+      "cost_model": "MATZOV",
+      "rough": false,
+      "denied_attacks": [
+        "arora-gb",
+        "bkw"
+      ],
+      "wall_seconds": 78.2,
+      "attacks": [
+        {
+          "attack": "dual_hybrid",
+          "log2_rop": 325.6687136446749,
+          "log2_m": 10.509775004326936,
+          "log2_red": 325.60108298287963,
+          "log2_guess": 321.2200853194607,
+          "beta": 1048.0,
+          "zeta": 0.0,
+          "t": 190.0,
+          "p": 3.0,
+          "raw": {
+            "rop": "1.08655435380426e98",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')",
+            "red": "1.03679429431396e98",
+            "guess": "4.97600594903040e96",
+            "beta": "1048",
+            "p": "3",
+            "zeta": "0",
+            "t": "190",
+            "beta_": "1019",
+            "N": "3.54459232009920e63",
+            "m": "1458"
+          }
+        },
+        {
+          "attack": "bdd",
+          "log2_rop": 339.68586974415587,
+          "log2_red": 338.7666699040976,
+          "log2_svp": 338.6002743674435,
+          "beta": 1099.0,
+          "d": 2598.0,
+          "eta": 1135.0,
+          "raw": {
+            "rop": "1.80150676035002e102",
+            "red": "9.52640788280417e101",
+            "svp": "8.48865972069601e101",
+            "beta": "1099",
+            "eta": "1135",
+            "d": "2598",
+            "tag": "bdd",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd_hybrid",
+          "log2_rop": 339.70859214127074,
+          "log2_red": 338.8093422734179,
+          "log2_svp": 338.6002743674435,
+          "log2_repetitions": 0.0,
+          "beta": 1099.0,
+          "d": 2643.0,
+          "eta": 1135.0,
+          "zeta": 0.0,
+          "raw": {
+            "rop": "1.83010504952455e102",
+            "red": "9.81239077454946e101",
+            "svp": "8.48865972069601e101",
+            "beta": "1099",
+            "eta": "1135",
+            "zeta": "0",
+            "|S|": "1",
+            "d": "2643",
+            "prob": "1.0",
+            "repetitions": "1",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "usvp",
+          "log2_rop": 343.82438067138645,
+          "log2_red": 343.82438067138645,
+          "beta": 1117.0,
+          "d": 2623.0,
+          "delta": 1.001878030478243,
+          "raw": {
+            "rop": "3.17286667065409e103",
+            "red": "3.17286667065409e103",
+            "delta": "1.00187803047824",
+            "beta": "1117",
+            "d": "2623",
+            "tag": "usvp",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "dual",
+          "log2_rop": 359.39528039932964,
+          "log2_mem": 245.243820078144,
+          "log2_m": 10.285402218862249,
+          "log2_repetitions": 0.0,
+          "beta": 1169.0,
+          "d": 2706.0,
+          "raw": {
+            "rop": "1.54439967039643e108",
+            "mem": "66949308357017924787584614645040328939000778216023701601535516312547071176",
+            "m": "1248",
+            "beta": "1169",
+            "d": "2706",
+            "repetitions": "1",
+            "tag": "dual"
+          }
+        },
+        {
+          "attack": "bdd_mitm_hybrid",
+          "log2_rop": 521.0987990097823,
+          "log2_red": 478.51087783611314,
+          "log2_svp": 521.098799009782,
+          "log2_repetitions": 135.15952389206677,
+          "beta": 1117.0,
+          "d": 2202.0,
+          "eta": 2.0,
+          "zeta": 459.0,
+          "raw": {
+            "rop": "7.35138565343432e156",
+            "red": "1.11205810618161e144",
+            "svp": "7.35138565343321e156",
+            "beta": "1117",
+            "eta": "2",
+            "zeta": "459",
+            "|S|": "971241815175273608135754103912905297084395699533996964176270044117621059880579952000417298884353159036820610839322708987047705622718199626253548424028591435576061220184233123322420470656576143789790146062233477775482107",
+            "d": "2202",
+            "prob": "9.46618075943599e-41",
+            "repetitions": "48648660986085752182026801633536627605615",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        }
+      ],
+      "security_bits": 325.7,
+      "cheapest_attack": "dual_hybrid",
+      "saturated": false,
+      "saturation_note": null
+    },
+    {
+      "cost_model": "CoreSVP_classical",
+      "rough": false,
+      "denied_attacks": [
+        "arora-gb",
+        "bkw"
+      ],
+      "wall_seconds": 74.3,
+      "attacks": [
+        {
+          "attack": "dual_hybrid",
+          "log2_rop": 306.8878003492098,
+          "log2_m": 10.509775004326936,
+          "log2_red": 306.308,
+          "log2_guess": 305.29245780024786,
+          "beta": 1049.0,
+          "zeta": 0.0,
+          "t": 180.0,
+          "p": 3.0,
+          "raw": {
+            "rop": "2.41231050705096e92",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')",
+            "red": "1.61397168690474e92",
+            "guess": "7.98338820146223e91",
+            "beta": "1049",
+            "p": "3",
+            "zeta": "0",
+            "t": "180",
+            "beta_": "1049",
+            "N": "2.11218914771085e65",
+            "m": "1458"
+          }
+        },
+        {
+          "attack": "usvp",
+          "log2_rop": 326.164,
+          "log2_red": 326.164,
+          "beta": 1117.0,
+          "d": 2623.0,
+          "delta": 1.001878030478243,
+          "raw": {
+            "rop": "1.53160757549079e98",
+            "red": "1.53160757549079e98",
+            "delta": "1.00187803047824",
+            "beta": "1117",
+            "d": "2623",
+            "tag": "usvp",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd",
+          "log2_rop": 327.164,
+          "log2_red": 326.164,
+          "log2_svp": 326.164,
+          "beta": 1117.0,
+          "d": 2616.0,
+          "eta": 1116.0,
+          "raw": {
+            "rop": "3.06321515098157e98",
+            "red": "1.53160757549079e98",
+            "svp": "1.53160757549079e98",
+            "beta": "1117",
+            "eta": "1116",
+            "d": "2616",
+            "tag": "bdd",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd_hybrid",
+          "log2_rop": 327.164,
+          "log2_red": 326.164,
+          "log2_svp": 326.164,
+          "log2_repetitions": 0.0,
+          "beta": 1117.0,
+          "d": 2660.0,
+          "eta": 1116.0,
+          "zeta": 0.0,
+          "raw": {
+            "rop": "3.06321515098157e98",
+            "red": "1.53160757549079e98",
+            "svp": "1.53160757549079e98",
+            "beta": "1117",
+            "eta": "1116",
+            "zeta": "0",
+            "|S|": "1",
+            "d": "2660",
+            "prob": "1.0",
+            "repetitions": "1",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "dual",
+          "log2_rop": 335.79999999999995,
+          "log2_mem": 248.79321348916204,
+          "log2_m": 10.265615046484458,
+          "log2_repetitions": 0.0,
+          "beta": 1150.0,
+          "d": 2689.0,
+          "raw": {
+            "rop": "1.21863190433897e101",
+            "mem": "783826564313452855047660743336356565494572098828654673708800587897723286240",
+            "m": "1231",
+            "beta": "1150",
+            "d": "2689",
+            "repetitions": "1",
+            "tag": "dual"
+          }
+        },
+        {
+          "attack": "bdd_mitm_hybrid",
+          "log2_rop": 521.098799009782,
+          "log2_red": 461.32352389206676,
+          "log2_svp": 521.098799009782,
+          "log2_repetitions": 135.15952389206677,
+          "beta": 1117.0,
+          "d": 2202.0,
+          "eta": 2.0,
+          "zeta": 459.0,
+          "raw": {
+            "rop": "7.35138565343321e156",
+            "red": "7.45106577037720e138",
+            "svp": "7.35138565343321e156",
+            "beta": "1117",
+            "eta": "2",
+            "zeta": "459",
+            "|S|": "971241815175273608135754103912905297084395699533996964176270044117621059880579952000417298884353159036820610839322708987047705622718199626253548424028591435576061220184233123322420470656576143789790146062233477775482107",
+            "d": "2202",
+            "prob": "9.46618075943599e-41",
+            "repetitions": "48648660986085752182026801633536627605615",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        }
+      ],
+      "security_bits": 306.9,
+      "cheapest_attack": "dual_hybrid",
+      "saturated": false,
+      "saturation_note": null
+    },
+    {
+      "cost_model": "CoreSVP_quantum",
+      "rough": false,
+      "denied_attacks": [
+        "arora-gb",
+        "bkw"
+      ],
+      "wall_seconds": 72.6,
+      "attacks": [
+        {
+          "attack": "dual_hybrid",
+          "log2_rop": 280.5964599283525,
+          "log2_m": 10.509775004326936,
+          "log2_red": 280.37,
+          "log2_guess": 277.81327212595374,
+          "beta": 1058.0,
+          "zeta": 10.0,
+          "t": 150.0,
+          "p": 3.0,
+          "raw": {
+            "rop": "6.3328691e85*e^(-5) + 2.51061364185933e84",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')",
+            "red": "2.51061364185933e84",
+            "guess": "6.3328691e85*e^(-5)",
+            "beta": "1058",
+            "p": "3",
+            "zeta": "10",
+            "t": "150",
+            "beta_": "1058",
+            "N": "5.33426082417085e65",
+            "m": "1458"
+          }
+        },
+        {
+          "attack": "usvp",
+          "log2_rop": 296.005,
+          "log2_red": 296.005,
+          "beta": 1117.0,
+          "d": 2623.0,
+          "delta": 1.001878030478243,
+          "raw": {
+            "rop": "1.27756753309320e89",
+            "red": "1.27756753309320e89",
+            "delta": "1.00187803047824",
+            "beta": "1117",
+            "d": "2623",
+            "tag": "usvp",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd",
+          "log2_rop": 297.005,
+          "log2_red": 296.005,
+          "log2_svp": 296.005,
+          "beta": 1117.0,
+          "d": 2616.0,
+          "eta": 1116.0,
+          "raw": {
+            "rop": "2.55513506618640e89",
+            "red": "1.27756753309320e89",
+            "svp": "1.27756753309320e89",
+            "beta": "1117",
+            "eta": "1116",
+            "d": "2616",
+            "tag": "bdd",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd_hybrid",
+          "log2_rop": 297.005,
+          "log2_red": 296.005,
+          "log2_svp": 296.005,
+          "log2_repetitions": 0.0,
+          "beta": 1117.0,
+          "d": 2660.0,
+          "eta": 1116.0,
+          "zeta": 0.0,
+          "raw": {
+            "rop": "2.55513506618640e89",
+            "red": "1.27756753309320e89",
+            "svp": "1.27756753309320e89",
+            "beta": "1117",
+            "eta": "1116",
+            "zeta": "0",
+            "|S|": "1",
+            "d": "2660",
+            "prob": "1.0",
+            "repetitions": "1",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "dual",
+          "log2_rop": 304.75,
+          "log2_mem": 248.79321348916204,
+          "log2_m": 10.265615046484458,
+          "log2_repetitions": 0.0,
+          "beta": 1150.0,
+          "d": 2689.0,
+          "raw": {
+            "rop": "5.48139600077606e91",
+            "mem": "783826564313452855047660743336356565494572098828654673708800587897723286240",
+            "m": "1231",
+            "beta": "1150",
+            "d": "2689",
+            "repetitions": "1",
+            "tag": "dual"
+          }
+        },
+        {
+          "attack": "bdd_mitm_hybrid",
+          "log2_rop": 521.098799009782,
+          "log2_red": 431.16452389206677,
+          "log2_svp": 521.098799009782,
+          "log2_repetitions": 135.15952389206677,
+          "beta": 1117.0,
+          "d": 2202.0,
+          "eta": 2.0,
+          "zeta": 459.0,
+          "raw": {
+            "rop": "7.35138565343321e156",
+            "red": "6.21519498042811e129",
+            "svp": "7.35138565343321e156",
+            "beta": "1117",
+            "eta": "2",
+            "zeta": "459",
+            "|S|": "971241815175273608135754103912905297084395699533996964176270044117621059880579952000417298884353159036820610839322708987047705622718199626253548424028591435576061220184233123322420470656576143789790146062233477775482107",
+            "d": "2202",
+            "prob": "9.46618075943599e-41",
+            "repetitions": "48648660986085752182026801633536627605615",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        }
+      ],
+      "security_bits": 280.6,
+      "cheapest_attack": "dual_hybrid",
+      "saturated": false,
+      "saturation_note": null
+    },
+    {
+      "cost_model": "CoreSVP_paranoid",
+      "rough": false,
+      "denied_attacks": [
+        "arora-gb",
+        "bkw"
+      ],
+      "wall_seconds": 71.0,
+      "attacks": [
+        {
+          "attack": "dual_hybrid",
+          "log2_rop": 226.54096201605,
+          "log2_m": 10.509775004326936,
+          "log2_red": 225.345,
+          "log2_guess": 225.71346159620958,
+          "beta": 1086.0,
+          "zeta": 0.0,
+          "t": 130.0,
+          "p": 3.0,
+          "raw": {
+            "rop": "1.56900675521339e68",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')",
+            "red": "6.84864054969495e67",
+            "guess": "8.84142700243892e67",
+            "beta": "1086",
+            "p": "3",
+            "zeta": "0",
+            "t": "130",
+            "beta_": "1086",
+            "N": "6.67745791119395e63",
+            "m": "1458"
+          }
+        },
+        {
+          "attack": "usvp",
+          "log2_rop": 231.77749999999997,
+          "log2_red": 231.77749999999997,
+          "beta": 1117.0,
+          "d": 2623.0,
+          "delta": 1.001878030478243,
+          "raw": {
+            "rop": "5.91534147223730e69",
+            "red": "5.91534147223730e69",
+            "delta": "1.00187803047824",
+            "beta": "1117",
+            "d": "2623",
+            "tag": "usvp",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd",
+          "log2_rop": 232.77749999999997,
+          "log2_red": 231.77749999999997,
+          "log2_svp": 231.77749999999997,
+          "beta": 1117.0,
+          "d": 2616.0,
+          "eta": 1116.0,
+          "raw": {
+            "rop": "1.18306829444746e70",
+            "red": "5.91534147223730e69",
+            "svp": "5.91534147223730e69",
+            "beta": "1117",
+            "eta": "1116",
+            "d": "2616",
+            "tag": "bdd",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "bdd_hybrid",
+          "log2_rop": 232.77749999999997,
+          "log2_red": 231.77749999999997,
+          "log2_svp": 231.77749999999997,
+          "log2_repetitions": 0.0,
+          "beta": 1117.0,
+          "d": 2660.0,
+          "eta": 1116.0,
+          "zeta": 0.0,
+          "raw": {
+            "rop": "1.18306829444746e70",
+            "red": "5.91534147223730e69",
+            "svp": "5.91534147223730e69",
+            "beta": "1117",
+            "eta": "1116",
+            "zeta": "0",
+            "|S|": "1",
+            "d": "2660",
+            "prob": "1.0",
+            "repetitions": "1",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        },
+        {
+          "attack": "dual",
+          "log2_rop": 239.1500582931433,
+          "log2_mem": 249.2100242732844,
+          "log2_m": 10.26795708440284,
+          "log2_repetitions": 0.0,
+          "beta": 1152.0,
+          "d": 2691.0,
+          "raw": {
+            "rop": "9.80259389739398e71",
+            "mem": "1046387460047248885431326972348225508691347413319736725273382752057661739812",
+            "m": "1233",
+            "beta": "1152",
+            "d": "2691",
+            "repetitions": "1",
+            "tag": "dual"
+          }
+        },
+        {
+          "attack": "bdd_mitm_hybrid",
+          "log2_rop": 521.098799009782,
+          "log2_red": 366.93702389206675,
+          "log2_svp": 521.098799009782,
+          "log2_repetitions": 135.15952389206677,
+          "beta": 1117.0,
+          "d": 2202.0,
+          "eta": 2.0,
+          "zeta": 459.0,
+          "raw": {
+            "rop": "7.35138565343321e156",
+            "red": "2.87773441899806e110",
+            "svp": "7.35138565343321e156",
+            "beta": "1117",
+            "eta": "2",
+            "zeta": "459",
+            "|S|": "971241815175273608135754103912905297084395699533996964176270044117621059880579952000417298884353159036820610839322708987047705622718199626253548424028591435576061220184233123322420470656576143789790146062233477775482107",
+            "d": "2202",
+            "prob": "9.46618075943599e-41",
+            "repetitions": "48648660986085752182026801633536627605615",
+            "tag": "hybrid",
+            "problem": "LWEParameters(n=1458, q=34993, Xs=D(\u03c3=0.82), Xe=D(\u03c3=3.19), m=+Infinity, tag='TriFHE-cyclotomic-n1458-q34993')"
+          }
+        }
+      ],
+      "security_bits": 226.5,
+      "cheapest_attack": "dual_hybrid",
+      "saturated": false,
+      "saturation_note": null
+    }
+  ],
+  "summary": {
+    "security_bits_matzov": 325.7,
+    "security_bits_coresvp_quantum": 280.6,
+    "saturated": false,
+    "cheapest_attack_matzov": "dual_hybrid",
+    "keyspace_log2": 2310.8753260514454,
+    "quotable": false,
+    "not_quotable_because": [
+      "q-not-prime",
+      "nwc-crt-fail",
+      "noise-budget-thin"
+    ]
+  },
+  "uncovered_attacks": [
+    {
+      "name": "Meet-LWE (May, CRYPTO 2021)",
+      "why": "Representation-technique MitM against small/sparse secrets. Not implemented in the estimator; must be costed separately for ternary secrets.",
+      "reference": "https://eprint.iacr.org/2021/216"
+    },
+    {
+      "name": "Cool and Cruel / statistical dual",
+      "why": "Exploits the uneven contribution of secret coordinates. Reported to beat estimator dual costs for sparse and small secrets.",
+      "reference": "https://arxiv.org/abs/2403.10328"
+    },
+    {
+      "name": "Subfield / Gentry-Szydlo-style structural attacks",
+      "why": "Applies when the ring has exploitable subfields or the modulus splits badly. Entirely outside the estimator's plain-LWE model.",
+      "reference": "https://eprint.iacr.org/2015/106"
+    },
+    {
+      "name": "IND-CPA^D / decryption-failure attacks",
+      "why": "Approximate-FHE key recovery from decryption results. Orthogonal to lattice hardness; a scheme can be 128-bit hard and still fully broken here.",
+      "reference": "https://eprint.iacr.org/2020/1533"
+    }
+  ],
+  "provenance": {
+    "generated_at_utc": "2026-08-27T13:13:11.511824+00:00",
+    "estimator": {
+      "path": "/home/user/workspace/lattice-estimator",
+      "commit": "53da5982597709ba0fdf94ea37a84d822310fd84",
+      "commit_date": "2026-08-19T09:11:23+01:00",
+      "commit_subject": "not sure this *should* go here, but maybe it can",
+      "branch": "main",
+      "working_tree_clean": true
+    },
+    "sage_version": "10.9",
+    "python_version": "3.14.7",
+    "platform": "Linux-6.1.155+-x86_64-with-glibc2.43",
+    "harness_version": "1.0.0"
+  }
+}
