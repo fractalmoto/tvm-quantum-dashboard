@@ -1,0 +1,1 @@
+New CLI exporter that validates all inventories and writes records/trifhe_prime_parameters.json and records/trifhe_prime_parameters.md; exits nonzero if a production candidate fails.

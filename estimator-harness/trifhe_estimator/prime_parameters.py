@@ -1,0 +1,1 @@
+New deterministic Miller-Rabin validator; factor/valuation checks; primitive-root and exact-order root verification; recommended 2048/RNS and research 2187 candidate inventories; JSON/Markdown artifact generation.
