@@ -1,0 +1,100 @@
+{
+  "params": {
+    "conductor": 8748,
+    "degree": 2916,
+    "phi_m": "X^2916 - X^1458 + 1",
+    "q": 35184372141673,
+    "log2_q": 45.0,
+    "q_mod_m": 1,
+    "t": 3,
+    "delta": 11728124047224,
+    "sigma": 3.19,
+    "gadget_base": 32768,
+    "gadget_digits": 4,
+    "secret": "uniform ternary {-1,0,+1}",
+    "error": "rounded Gaussian, width sigma",
+    "relinearisation": "BFV v1, evk encrypts B^i * s^2"
+  },
+  "formal_model": {
+    "model": "coefficient-wise variance propagation under the independence heuristic",
+    "caveat": "The independence heuristic is an assumption, not a theorem. It treats coefficients of ring products as independent, which is false in detail. This model is only credible where the empirical distribution agrees with it.",
+    "tail": {
+      "per_coefficient_failure_target": "2^-128.0 / N",
+      "union_bounded_over_coefficients": 2916,
+      "gaussian_tail_multiplier_D": 13.7005
+    },
+    "fresh": {
+      "variance_terms": {
+        "e1 (encryption error)": 10.1761,
+        "e2 * s (encryption error times secret)": 19782.338399999997,
+        "u * e (ephemeral times public-key error)": 19782.338399999997
+      },
+      "sigma_v": 1.6962157981960975e-11,
+      "log2_sigma_v": -35.77888931773828
+    },
+    "after_mult_relin": {
+      "variance_terms": {
+        "v1 * m2 (fresh noise times plaintext)": 192333785.09399995,
+        "v2 * m1 (fresh noise times plaintext)": 192333785.09399995,
+        "v1 * v2 (product of noises)": 3.320236629987611e-14,
+        "scaling rounding r0": 0.08333333333333333,
+        "scaling rounding r1 * s": 162.0,
+        "scaling rounding r2 * s^2": 314928.0,
+        "relinearisation digits * evk error": 42482248233202.48
+      },
+      "dominant_term": "relinearisation digits * evk error",
+      "dominant_share": 0.9999909378814087,
+      "sigma_v": 5.557470462726084e-07,
+      "log2_sigma_v": -20.779068288686098,
+      "predicted_tail_bound_on_v_inf": 7.61403157479988e-06,
+      "decryption_correctness_threshold": 0.5,
+      "predicted_correct": true,
+      "headroom_bits": 16.002908016666872
+    },
+    "min_log2_q_for_one_mult_relin": 29
+  },
+  "empirical": {
+    "fresh": {
+      "trials": 128,
+      "coefficients_observed": 373248,
+      "empirical_sigma_v": 1.9975572765664513e-11,
+      "log2_empirical_sigma_v": -35.5429721731816,
+      "predicted_sigma_v": 1.6962157981960975e-11,
+      "ratio_empirical_over_predicted": 1.177655153719725,
+      "observed_max_v_inf": 8.731149123907396e-11,
+      "observed_mean_max_v_inf": 7.407408009174365e-11,
+      "observed_max_over_sigma": 4.370913027793195
+    },
+    "after_mult_relin": {
+      "trials": 128,
+      "coefficients_observed": 373248,
+      "empirical_sigma_v": 7.24520841806818e-07,
+      "log2_empirical_sigma_v": -20.396469472788397,
+      "predicted_sigma_v": 5.557470462726084e-07,
+      "ratio_empirical_over_predicted": 1.3036881557287157,
+      "observed_max_v_inf": 2.1446304540028104e-06,
+      "observed_mean_max_v_inf": 1.8472732429288138e-06,
+      "observed_max_over_sigma": 2.960067302763172
+    }
+  },
+  "decryption": {
+    "fresh_failures": 0,
+    "after_mult_relin_failures": 0,
+    "trials": 128
+  },
+  "verdict": {
+    "model_agrees_with_measurement": true,
+    "empirical_tail_bound_on_v_inf": 9.926322781411064e-06,
+    "empirical_predicted_correct": true,
+    "headroom_bits": 15.620309200769173,
+    "note": "A passing empirical run over a few hundred trials cannot certify a 2^-128 failure probability directly \u2014 it bounds failure at roughly 2^-7.0. The tail claim rests on the Gaussian extrapolation from the MEASURED standard deviation, and the experiment's job is to validate that standard deviation, not the tail itself."
+  },
+  "provenance": {
+    "generated_at_utc": "2026-09-08T05:01:42.933545+00:00",
+    "python_version": "3.14.3",
+    "platform": "Linux-6.1.155+-x86_64-with-glibc2.43",
+    "harness_version": "1.1.0",
+    "wall_seconds": 69.9,
+    "command": "python -m trifhe_estimator.run_noise --m 8748 --log2-q 45 --trials 128 --quiet --json-out records/noise-m8748-q45.json"
+  }
+}

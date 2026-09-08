@@ -42,6 +42,10 @@ from .params import (
     TriFHEParams,
     draft_spec_2187,
     cyclotomic_reading_2187,
+    ternary_experimental,
+    ternary_pure,
+    baseline_2048,
+    baseline_4096,
 )
 from .adapter import to_lwe_parameters, cost_models, UNCOVERED_ATTACKS
 
@@ -50,8 +54,16 @@ DEFAULT_ESTIMATOR_PATH = os.environ.get(
 )
 
 PRESETS = {
+    # The two readings of the original draft memorandum. Both carry blockers.
     "draft": draft_spec_2187,
     "cyclotomic": cyclotomic_reading_2187,
+    # The parameter programme. The experimental ternary-aligned candidate is
+    # only ever meaningful next to the power-of-two baselines, so all four are
+    # presets and the worksheet generator runs them as a set.
+    "ternary-experimental": ternary_experimental,
+    "ternary-pure": ternary_pure,
+    "baseline-2048": baseline_2048,
+    "baseline-4096": baseline_4096,
 }
 
 
@@ -257,6 +269,7 @@ def estimate(
 
     return dict(
         instance=p.to_dict(),
+        ring=p.ring_dict(),
         estimator_instance=dict(
             n=int(lwe_params.n),
             q=int(lwe_params.q),
@@ -396,7 +409,14 @@ def main(argv=None) -> int:
     ap.add_argument(
         "--ring",
         default="negacyclic_pow3",
-        choices=["power_of_two_cyclotomic", "ternary_cyclotomic", "negacyclic_pow3"],
+        choices=[
+            "power_of_two_cyclotomic",
+            "ternary_cyclotomic",
+            "negacyclic_pow3",
+            "smooth_cyclotomic",
+        ],
+        help=("'smooth_cyclotomic' interprets --n as the CONDUCTOR m and derives the "
+              "dimension as phi(m). Prefer it: it is the only unambiguous form."),
     )
     ap.add_argument(
         "--secret",
@@ -414,13 +434,20 @@ def main(argv=None) -> int:
         help=("comma-separated attacks to skip. Default '%(default)s' (never "
               "competitive here, dominate runtime). Pass '' to run everything."),
     )
+    ap.add_argument("--log2-q", type=int, default=45,
+                    help="target modulus size for presets that choose q themselves")
     ap.add_argument("--jobs", type=int, default=1, help="estimator worker threads")
     ap.add_argument("--estimator-path", default=DEFAULT_ESTIMATOR_PATH)
     ap.add_argument("--json-out", help="write the audit record here")
     args = ap.parse_args(argv)
 
     if args.preset:
-        p = PRESETS[args.preset]()
+        fn = PRESETS[args.preset]
+        try:
+            p = fn(log2_q=args.log2_q)
+        except TypeError:
+            # The two draft presets pin q from the memorandum and take no argument.
+            p = fn()
         if args.sigma_e or args.samples:
             from dataclasses import replace
 

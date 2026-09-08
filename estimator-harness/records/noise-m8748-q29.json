@@ -1,0 +1,100 @@
+{
+  "params": {
+    "conductor": 8748,
+    "degree": 2916,
+    "phi_m": "X^2916 - X^1458 + 1",
+    "q": 536882257,
+    "log2_q": 29.0,
+    "q_mod_m": 1,
+    "t": 3,
+    "delta": 178960752,
+    "sigma": 3.19,
+    "gadget_base": 32768,
+    "gadget_digits": 2,
+    "secret": "uniform ternary {-1,0,+1}",
+    "error": "rounded Gaussian, width sigma",
+    "relinearisation": "BFV v1, evk encrypts B^i * s^2"
+  },
+  "formal_model": {
+    "model": "coefficient-wise variance propagation under the independence heuristic",
+    "caveat": "The independence heuristic is an assumption, not a theorem. It treats coefficients of ring products as independent, which is false in detail. This model is only credible where the empirical distribution agrees with it.",
+    "tail": {
+      "per_coefficient_failure_target": "2^-128.0 / N",
+      "union_bounded_over_coefficients": 2916,
+      "gaussian_tail_multiplier_D": 13.7005
+    },
+    "fresh": {
+      "variance_terms": {
+        "e1 (encryption error)": 10.1761,
+        "e2 * s (encryption error times secret)": 19782.338399999997,
+        "u * e (ephemeral times public-key error)": 19782.338399999997
+      },
+      "sigma_v": 1.1116084969877558e-06,
+      "log2_sigma_v": -19.778919801861576
+    },
+    "after_mult_relin": {
+      "variance_terms": {
+        "v1 * m2 (fresh noise times plaintext)": 192333785.09399995,
+        "v2 * m1 (fresh noise times plaintext)": 192333785.09399995,
+        "v1 * v2 (product of noises)": 0.00014259705113359563,
+        "scaling rounding r0": 0.08333333333333333,
+        "scaling rounding r1 * s": 162.0,
+        "scaling rounding r2 * s^2": 314928.0,
+        "relinearisation digits * evk error": 21241124116601.24
+      },
+      "dominant_term": "relinearisation digits * evk error",
+      "dominant_share": 0.99998187592706,
+      "sigma_v": 0.025753418607411642,
+      "log2_sigma_v": -5.2790922359022385,
+      "predicted_tail_bound_on_v_inf": 0.35283559984893753,
+      "decryption_correctness_threshold": 0.5,
+      "predicted_correct": true,
+      "headroom_bits": 0.5029319638830139
+    },
+    "min_log2_q_for_one_mult_relin": 29
+  },
+  "empirical": {
+    "fresh": {
+      "trials": 128,
+      "coefficients_observed": 373248,
+      "empirical_sigma_v": 1.2993658818871732e-06,
+      "log2_empirical_sigma_v": -19.553760840109554,
+      "predicted_sigma_v": 1.1116084969877558e-06,
+      "ratio_empirical_over_predicted": 1.1689060360803318,
+      "observed_max_v_inf": 6.560097589516727e-06,
+      "observed_mean_max_v_inf": 4.9441706545351525e-06,
+      "observed_max_over_sigma": 5.048691581765231
+    },
+    "after_mult_relin": {
+      "trials": 128,
+      "coefficients_observed": 373248,
+      "empirical_sigma_v": 0.038181034084566946,
+      "log2_empirical_sigma_v": -4.711000012950272,
+      "predicted_sigma_v": 0.025753418607411642,
+      "ratio_empirical_over_predicted": 1.4825617781702476,
+      "observed_max_v_inf": 0.10644647360734069,
+      "observed_mean_max_v_inf": 0.09376422793631733,
+      "observed_max_over_sigma": 2.7879410853978714
+    }
+  },
+  "decryption": {
+    "fresh_failures": 0,
+    "after_mult_relin_failures": 0,
+    "trials": 128
+  },
+  "verdict": {
+    "model_agrees_with_measurement": true,
+    "empirical_tail_bound_on_v_inf": 0.5231005743138067,
+    "empirical_predicted_correct": false,
+    "headroom_bits": -0.06516025906895219,
+    "note": "A passing empirical run over a few hundred trials cannot certify a 2^-128 failure probability directly \u2014 it bounds failure at roughly 2^-7.0. The tail claim rests on the Gaussian extrapolation from the MEASURED standard deviation, and the experiment's job is to validate that standard deviation, not the tail itself."
+  },
+  "provenance": {
+    "generated_at_utc": "2026-09-08T05:02:35.205004+00:00",
+    "python_version": "3.14.3",
+    "platform": "Linux-6.1.155+-x86_64-with-glibc2.43",
+    "harness_version": "1.1.0",
+    "wall_seconds": 52.2,
+    "command": "python -m trifhe_estimator.run_noise --m 8748 --log2-q 29 --trials 128 --quiet --json-out records/noise-m8748-q29.json"
+  }
+}
