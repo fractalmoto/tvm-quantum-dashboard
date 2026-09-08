@@ -154,3 +154,41 @@ blocker precisely so the two facts travel together.
 - [The Cool and the Cruel](https://arxiv.org/abs/2403.10328) — statistical dual attack on sparse/small secrets
 - [Li & Micciancio, IND-CPA^D](https://eprint.iacr.org/2020/1533) — approximate-FHE decryption-failure attacks
 - [Elias, Lauter, Ozman, Stange](https://eprint.iacr.org/2015/106) — weak RLWE instances from ring structure
+
+## The ternary-aligned ring programme
+
+`TERNARY-RING-PROGRAMME.md` records the execution of the five-step programme for
+the ternary-aligned candidate ring \(m = 8748\), \(N = \varphi(m) = 2916\),
+\(\Phi_m(X) = X^{2916} - X^{1458} + 1\), against power-of-two baselines at
+\(N = 2048\) and \(N = 4096\).
+
+New modules:
+
+| module | purpose |
+|---|---|
+| `rings.py` | cyclotomics for any \(m = 2^a 3^b\), closed form plus an independent generic recursion, reduction, schoolbook multiplication, per-CRT-component NTT findings |
+| `transform.py` | mixed-radix cyclic transform and ring multiplier, exact below \(2^{50}\), raises above it |
+| `bfv.py` | textbook BFV over any such ring, with exact integer tensoring via multi-prime CRT |
+| `noise.py` | term-by-term variance model plus a union-bounded Gaussian tail bound |
+| `run_noise.py` | CLI for randomised noise experiments; exits 2 when the result is not quotable |
+| `worksheet.py` | generates `SECURITY-WORKSHEET.md` from the JSON records |
+
+Presets are declared by **conductor**, never by degree, so the lattice dimension
+is always derived rather than asserted:
+
+```sh
+python -m trifhe_estimator.run_noise --preset ternary-experimental --trials 128
+pytest tests/                     # 203 tests: rings, transform, BFV, noise model
+sage -python -m trifhe_estimator.run_estimate --preset baseline-2048 --log2-q 45
+python -m trifhe_estimator.worksheet records/*.json --noise 'records/noise-*.json'
+```
+
+Two headline results, both documented in full in `TERNARY-RING-PROGRAMME.md`:
+
+- **The relinearisation term is 99.999% of the invariant-noise variance** at a
+  \(2^{15}\) gadget base. Any noise formula that omits the gadget base and digit
+  count — as the draft's did — is missing its largest term.
+- **A configuration can decrypt correctly in every trial and still fail.** At
+  \(\log_2 q = 29\) the tail bound is 0.523 against a 0.5 threshold with zero
+  observed failures in 128 trials. 128 trials bound failure near \(2^{-7}\), not
+  \(2^{-128}\).

@@ -41,7 +41,17 @@ SecretKind = Literal["dense_ternary", "sparse_ternary", "gaussian"]
 #                             (x^odd + 1 is divisible by x + 1). Modelled here
 #                             because the draft spec implies it, but see
 #                             `structural_findings()` -- it is not a sound ring.
-RingKind = Literal["power_of_two_cyclotomic", "ternary_cyclotomic", "negacyclic_pow3"]
+#   smooth_cyclotomic       : Z[x]/(Phi_m(x)) for any m = 2^a 3^b, where the
+#                             DECLARED number is the CONDUCTOR m and the lattice
+#                             dimension is phi(m). This is the only ring kind
+#                             that is unambiguous, because it names m rather
+#                             than a degree that could mean either. Prefer it.
+RingKind = Literal[
+    "power_of_two_cyclotomic",
+    "ternary_cyclotomic",
+    "negacyclic_pow3",
+    "smooth_cyclotomic",
+]
 
 
 def is_prime(n: int) -> bool:
@@ -132,6 +142,10 @@ class TriFHEParams:
 
         This is where a spec that says "N = 2187" can silently mean 1458.
         """
+        if self.ring_kind == "smooth_cyclotomic":
+            from .rings import euler_phi
+
+            return euler_phi(self.ring_size)
         if self.ring_kind == "ternary_cyclotomic":
             k = round(math.log(self.ring_size, 3))
             if 3**k != self.ring_size:
@@ -196,6 +210,71 @@ class TriFHEParams:
         """
         f: list[dict] = []
         n = self.lattice_dim
+
+        # --- conductor-declared rings get the full ring analysis ----------
+        # For `smooth_cyclotomic` the ring module owns every algebraic check,
+        # including the one the draft spec failed: that the negacyclic
+        # 'q = 1 mod 2N' condition is not the applicable condition for a
+        # trinomial ring, and that a product congruence over a composite q is a
+        # false positive rather than a pass.
+        if self.ring_kind == "smooth_cyclotomic":
+            from .rings import CyclotomicRing
+
+            ring = CyclotomicRing(self.ring_size, self.q)
+            f.append(
+                dict(
+                    id="ring-declared-by-conductor",
+                    severity="ok",
+                    detail=(
+                        f"Ring declared by CONDUCTOR m = {self.ring_size}, so the degree is "
+                        f"phi(m) = {ring.degree} by construction and cannot be misread. "
+                        f"Phi_m(X) = {ring.phi_str}. Cyclotomic polynomials are irreducible "
+                        "over Q, so R = Z[X]/Phi_m(X) is the ring of integers of a number "
+                        "field and the instance is a well-formed RLWE instance."
+                    ),
+                )
+            )
+            f.extend(ring.ntt_findings())
+            f.extend(self._noise_and_keyspace_findings())
+            from .rings import factor_2a3b
+
+            _a, _b = factor_2a3b(self.ring_size)
+            if _b == 0:
+                # Power-of-two conductor: Phi_m = X^(m/2) + 1. The standard,
+                # mature, published setting. The baseline exists precisely
+                # because it carries no bespoke-ring audit burden.
+                f.append(
+                    dict(
+                        id="standard-power-of-two-ring",
+                        severity="ok",
+                        detail=(
+                            f"Conductor {self.ring_size} = 2^{_a} is a power of two, so "
+                            f"Phi_m(X) = X^{self.lattice_dim} + 1. This is the standard "
+                            "negacyclic setting used by every maintained FHE library and "
+                            "every published parameter table, so it carries no bespoke-ring "
+                            "audit burden and serves as the control against which the "
+                            "experimental ternary-aligned candidate is judged."
+                        ),
+                    )
+                )
+                return f
+            f.append(
+                dict(
+                    id="nonstandard-ring-audit-burden",
+                    severity="warning",
+                    detail=(
+                        "This is not a power-of-two cyclotomic. Costing it as plain LWE of "
+                        f"dimension {ring.degree} is the standard practice, but it is only "
+                        "defensible after subfield and structural screening (TRI-218): "
+                        f"Q(zeta_{self.ring_size}) has subfields for every divisor of the "
+                        "conductor, and no maintained implementation ships this ring, so the "
+                        "transform, twiddle construction and reduction step are all bespoke "
+                        "code that must be proved correct against schoolbook reduction before "
+                        "any measured or estimated number means anything."
+                    ),
+                )
+            )
+            return f
 
         # --- modulus arithmetic -------------------------------------------
         if not is_prime(self.q):
@@ -298,6 +377,13 @@ class TriFHEParams:
                 )
             )
 
+        f.extend(self._noise_and_keyspace_findings())
+        return f
+
+    def _noise_and_keyspace_findings(self) -> list[dict]:
+        f: list[dict] = []
+        n = self.lattice_dim
+
         # --- noise budget --------------------------------------------------
         # Very rough sanity check: an FHE ciphertext needs headroom between the
         # error width and q for even one multiplication. log2(q) - log2(sigma)
@@ -351,6 +437,14 @@ class TriFHEParams:
 
         return f
 
+    def ring_dict(self) -> dict | None:
+        """Full ring description when the ring is declared by conductor."""
+        if self.ring_kind != "smooth_cyclotomic":
+            return None
+        from .rings import CyclotomicRing
+
+        return CyclotomicRing(self.ring_size, self.q).to_dict()
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d.update(
@@ -377,6 +471,76 @@ def draft_spec_2187() -> TriFHEParams:
         ring_kind="negacyclic_pow3",
         secret_kind="dense_ternary",
         tag="TriFHE-draft-N2187-q34993",
+    )
+
+
+def _q_for(m: int, log2_q: int) -> int:
+    """An NTT-admissible prime for conductor m: q prime, q = 1 mod L where L is
+    the transform length. Chosen by the ring module, not by hand, so the
+    congruence cannot be wrong."""
+    from .rings import CyclotomicRing, find_transform_prime
+    from .transform import transform_length
+
+    ring = CyclotomicRing(m)
+    return find_transform_prime(transform_length(m, ring.degree), log2_q, 1)[0]
+
+
+def ternary_experimental(log2_q: int = 45) -> TriFHEParams:
+    """The leading experimental ternary-aligned candidate.
+
+    m = 8748 = 2^2 * 3^7, N = phi(m) = 2916, Phi_m(X) = X^2916 - X^1458 + 1.
+    Sound cyclotomic ring, sparse trinomial, 3^7 in the conductor. Experimental
+    because the ring is nonstandard: the transform is bespoke and the structural
+    screening in TRI-218 is not done.
+    """
+    return TriFHEParams(
+        ring_size=8748,
+        q=_q_for(8748, log2_q),
+        ring_kind="smooth_cyclotomic",
+        secret_kind="dense_ternary",
+        error_sigma=HES_DEFAULT_SIGMA,
+        tag=f"TriFHE-experimental-m8748-n2916-q{log2_q}bit",
+    )
+
+
+def ternary_pure(log2_q: int = 45) -> TriFHEParams:
+    """The pure 3-power ring at comparable size. m = 3^7, N = 1458."""
+    return TriFHEParams(
+        ring_size=2187,
+        q=_q_for(2187, log2_q),
+        ring_kind="smooth_cyclotomic",
+        secret_kind="dense_ternary",
+        error_sigma=HES_DEFAULT_SIGMA,
+        tag=f"TriFHE-pure3-m2187-n1458-q{log2_q}bit",
+    )
+
+
+def baseline_2048(log2_q: int = 45) -> TriFHEParams:
+    """Power-of-two implementation and security baseline. m = 4096, N = 2048.
+
+    This is the configuration every published parameter table, every maintained
+    FHE library and every prior estimator run agrees on. It is the control: any
+    claim about the experimental ring is only meaningful relative to it.
+    """
+    return TriFHEParams(
+        ring_size=4096,
+        q=_q_for(4096, log2_q),
+        ring_kind="smooth_cyclotomic",
+        secret_kind="dense_ternary",
+        error_sigma=HES_DEFAULT_SIGMA,
+        tag=f"TriFHE-baseline-m4096-n2048-q{log2_q}bit",
+    )
+
+
+def baseline_4096(log2_q: int = 45) -> TriFHEParams:
+    """Power-of-two baseline at N = 4096. m = 8192."""
+    return TriFHEParams(
+        ring_size=8192,
+        q=_q_for(8192, log2_q),
+        ring_kind="smooth_cyclotomic",
+        secret_kind="dense_ternary",
+        error_sigma=HES_DEFAULT_SIGMA,
+        tag=f"TriFHE-baseline-m8192-n4096-q{log2_q}bit",
     )
 
 
